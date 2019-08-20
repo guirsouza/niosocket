@@ -19,27 +19,28 @@ public class NettyChannelInboundHandlerAdapter extends ChannelInboundHandlerAdap
 
     @Override
 	public void channelActive(ChannelHandlerContext ctx) {
-		System.out.println("channel connected   : " + ctx.channel().id().asLongText());
 		channelMapper().add(ctx.channel());
 	}
 
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) {
-		System.out.println("Channel disconnected: " + ctx.channel().id().asLongText());
 		channelMapper().remove(ctx.channel());
 	}
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         String received = byteBufferToString(msg);
+        received = received.replace(System.getProperty("line.separator"), "");
+        System.out.println(ctx.channel().id().asLongText() + " read: " + received);
+        channelWrite(ctx, received);
+    }
 
-        System.out.println(ctx.channel().id().asLongText() + " - channelRead: " + received);
-        ctx.write(Unpooled.copiedBuffer("> " + received, CharsetUtil.UTF_8));
+    public void channelWrite(ChannelHandlerContext ctx, String message) throws Exception {
+        ctx.write(Unpooled.copiedBuffer("> " + message + "\n", CharsetUtil.UTF_8));
     }
 
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-        System.out.println("channelReadCompleted");
         ctx.writeAndFlush(Unpooled.EMPTY_BUFFER);
     }
 

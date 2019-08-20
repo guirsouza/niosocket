@@ -1,6 +1,7 @@
 package org.guirsouza;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.TimeUnit;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
@@ -26,28 +27,31 @@ public class NettyServer {
     }
 
     public void start() throws InterruptedException {
-        EventLoopGroup group = new NioEventLoopGroup();
+        EventLoopGroup masterGroup = new NioEventLoopGroup();
+        EventLoopGroup slaveGroup = new NioEventLoopGroup();
 
         try {
             bootstrap = new ServerBootstrap();
-            bootstrap.group(group);
+            bootstrap.group(masterGroup, slaveGroup);
             bootstrap.channel(NioServerSocketChannel.class);
-            // bootstrap.localAddress(new InetSocketAddress());
+            bootstrap.handler(loggingHandler);
+            bootstrap.localAddress(new InetSocketAddress("192.168.0.9", 10000));
+            bootstrap.option(ChannelOption.SO_BACKLOG, 128)
+                     .childOption(ChannelOption.SO_KEEPALIVE, true);
 
             bootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
                 protected void initChannel(SocketChannel socketChannel) throws Exception {
-                    socketChannel.pipeline().addLast("idleStateHandler", new IdleStateHandler(0, 0, 30));
-                    socketChannel.pipeline().addLast("loggingHandler", loggingHandler);
+                    socketChannel.pipeline().addLast("idleStateHandler", new IdleStateHandler(0, 0, 10, TimeUnit.SECONDS));
                     socketChannel.pipeline().addLast("channelInboundHandler", new NettyChannelInboundHandlerAdapter());
                 }
-            }).option(ChannelOption.SO_BACKLOG, 128)
-            .childOption(ChannelOption.SO_KEEPALIVE, true);
-
-            channelFuture = bootstrap.bind("192.168.2.240", port).sync();
+            });
+            
+            channelFuture = bootstrap.bind(new InetSocketAddress("192.168.0.9", 10000)).sync();
             channelFuture.channel().closeFuture().addListener(__ -> {
 				try {
 					System.out.println("Close future activated");
-					group.shutdownGracefully();
+                    masterGroup.shutdownGracefully();
+                    slaveGroup.shutdownGracefully();
 				} catch (Exception e) {
 					System.out.println("Closing EventLoopGroups:\n" + e);
 				}
@@ -56,8 +60,6 @@ public class NettyServer {
             ChannelMapper.getInstance().add(channelFuture.channel());
         } catch(Exception e) {
             e.printStackTrace();;
-        } finally {
-            //group.shutdownGracefully().sync();
         }
     }
 

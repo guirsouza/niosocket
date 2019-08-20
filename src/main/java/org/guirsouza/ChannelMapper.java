@@ -23,7 +23,7 @@ public class ChannelMapper {
 	private final Map<String, Channel> channels = new WeakHashMap<>();
 
 	public boolean add(Channel channel) {
-		System.out.println("Adding channel: "+ channel.id().asLongText() +" == " + channel);
+		System.out.println(channel.id().asLongText() + " Added to list");
 
 		channels.put(channel.id().asLongText(), channel);
 		channel.closeFuture().addListener(__ -> remove(channel));
@@ -36,7 +36,7 @@ public class ChannelMapper {
 	}
 
 	public void remove(Channel channel) {
-        System.out.println("Removing channel " + channel.id().asLongText());
+        System.out.println(channel.id().asLongText() + " Removed from list");
 		channels.remove(channel.id().asLongText());
 	}
 

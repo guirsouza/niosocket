@@ -25,7 +25,7 @@
 	</dependencies>
 
 	<build>
-		<finalName>java-niosocket</finalName>
+		<finalName>niosocket</finalName>
 		<plugins>
 			<!-- Use Java 8 -->
 			<plugin>
